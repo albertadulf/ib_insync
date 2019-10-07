@@ -56,7 +56,7 @@ class NormalTradeManager(TradeManagerBase):
 
     def _on_order_filled(
             self, item: StrategyItem,
-            value: float, shares: int, side: str) -> None:
+            value: float, shares: int, side: str, fill_time: int) -> None:
         avg_price = value / shares
         if side.upper() == 'BUY':
             item.shares += shares
@@ -67,7 +67,7 @@ class NormalTradeManager(TradeManagerBase):
             item.value += value
             change = value
         item.trade_times += 1
-        data = (item.name, item.contract.symbol,
+        data = (fill_time, item.name, item.contract.symbol,
                 side, shares, avg_price, change)
         self._queue.put_nowait(data)
 
@@ -106,13 +106,16 @@ class NormalTradeManager(TradeManagerBase):
             value = 0
             shares = 0
             action = trade.order.action
+            fill_time = 0
             for fill in trade.fills:
                 value += fill.execution.price * fill.execution.shares
                 shares += fill.execution.shares
+                fill_time = int(fill.time.timestamp() * 1000)
             print(f'Filled {action}: {shares}, value: {value},'
                   + f' id: {oid}, {str(trade.order)}')
             self._on_order_filled(
-                self._running_strategies[sid], value, shares, action)
+                self._running_strategies[sid],
+                value, shares, action, fill_time)
             self._running_strategies[sid].impl.on_commission(oid, value)
             self._pending_orders.pop(oid)
         elif trade.orderStatus.status != 'Submitted':
