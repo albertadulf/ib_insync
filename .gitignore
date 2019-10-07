@@ -12,3 +12,12 @@ docs/html/.buildinfo
 docs/html/.doctrees
 docs/doctrees
 ib_insync.egg-info
+app/__pycache__
+app/console/__pycache__
+app/recorder/__pycache__
+app/redis/__pycache__
+app/server/__pycache__
+app/trader/__pycache__
+app/utils/__pycache__
+logs/
+app/data
