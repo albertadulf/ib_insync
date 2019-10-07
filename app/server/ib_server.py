@@ -38,6 +38,10 @@ class ServerConfig(object):
         {'secType': 'CMDTY',
          'symbol': 'XAGUSD',
          'exchange': 'SMART',
+         'currency': 'USD'},
+        {'secType': 'CMDTY',
+         'symbol': 'XAUUSD',
+         'exchange': 'SMART',
          'currency': 'USD'}, )
 
 
