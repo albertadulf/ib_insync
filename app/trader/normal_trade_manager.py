@@ -136,6 +136,12 @@ class NormalTradeManager(TradeManagerBase):
         if strategy_id in self._running_strategies.keys():
             item = self._running_strategies[strategy_id]
             self._running_strategies.pop(strategy_id)
+            remove_order_list = []
+            for order_id, sid in self._pending_orders.items():
+                if sid == strategy_id:
+                    remove_order_list.append(order_id)
+            for oid in remove_order_list:
+                self._pending_orders.pop(oid)
             return f'success stop strategy {str(item)}'
         return f'no strategy id: {strategy_id}'
 
