@@ -71,6 +71,7 @@ class IbManager(object):
         side = side.upper()
         if side not in ('SELL', 'BUY'):
             return [f'invalid order type: {side}']
+        price = round(price, 4)
         order = LimitOrder(side, size, price)
         trade = self._ib.placeOrder(contract, order)
         return trade
