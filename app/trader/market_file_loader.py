@@ -9,10 +9,32 @@ class MarketFileLoader(object):
     def __init__(self, filename: str, observer: Any) -> None:
         self._filename = filename
         self._observer = observer
-        self._task = asyncio.create_task(self._process())
+        self._task = asyncio.create_task(self._process2())
 
     def stop(self) -> None:
         self._task.cancel()
+
+    async def _process2(self) -> None:
+        async with aiofiles.open(self._filename, mode='r') as f:
+            async for line in f:
+                t = line.strip().split(',')
+                ts = int(float(t.pop(0)) * 1000)
+                bids_price = []
+                bids_amount = []
+                asks_price = []
+                asks_amount = []
+                for i, data in enumerate(t):
+                    if i % 4 == 0:
+                        bids_price.append(float(data))
+                    elif i % 4 == 1:
+                        bids_amount.append(int(data))
+                    elif i % 4 == 2:
+                        asks_price.append(float(data))
+                    else:
+                        asks_amount.append(int(data))
+                data = MarketData(ts, tuple(bids_price), tuple(bids_amount),
+                                  tuple(asks_price), tuple(asks_amount))
+                self._observer.feed_data(data)
 
     async def _process(self) -> None:
         async with aiofiles.open(self._filename, mode='r') as f:
