@@ -69,32 +69,36 @@ class ConsoleHandler(object):
         self._trader: RandomTrader = RandomTrader(
             self._ib_manager._ib, self._ib_manager)
         self._server.add_dispatcher(ConsoleCommandRequest, self.on_console_cmd)
-        self.add_handler('fsymbols', self._ib_manager.find_symbols)
-        self.add_handler('submkt', partial(self.contract_handler,
-                                           self._ib_manager.sub_market))
-        self.add_handler('unsubmkt', partial(self.contract_handler,
-                                             self._ib_manager.unsub_market))
-        self.add_handler('subdmkt', partial(self.contract_handler,
-                                            self._ib_manager.sub_market_depth))
-        self.add_handler('unsubdmkt',
+        self.add_handler('find_symbols', self._ib_manager.find_symbols)
+        self.add_handler('subscribe_market',
+                         partial(self.contract_handler,
+                                 self._ib_manager.sub_market))
+        self.add_handler('unsubscribe_market',
+                         partial(self.contract_handler,
+                                 self._ib_manager.unsub_market))
+        self.add_handler('subscribe_market_depth',
+                         partial(self.contract_handler,
+                                 self._ib_manager.sub_market_depth))
+        self.add_handler('unsubscribe_market_depth',
                          partial(self.contract_handler,
                                  self._ib_manager.unsub_market_depth))
-        self.add_handler('od', partial(self.contract_handler,
-                                       self._ib_manager.place_order))
-        self.add_handler('cod', self._ib_manager.cancel_order)
+        self.add_handler('order', partial(self.contract_handler,
+                                          self._ib_manager.place_order))
+        self.add_handler('cancel_order', self._ib_manager.cancel_order)
         self.add_handler('contract', self.make_contract)
-        self.add_handler('ods', self._ib_manager.orders)
-        self.add_handler('pf', self._ib_manager.portfolio)
+        self.add_handler('orders', self._ib_manager.orders)
+        self.add_handler('portfolio', self._ib_manager.portfolio)
         self.add_handler('tstart', partial(self.contract_handler,
                                            self.start_trader))
         self.add_handler('tstop', self.stop_trader)
         self.add_handler('cash', self._ib_manager._account_recorder.cash)
-        self.add_handler('lstr', self.list_strategies)
-        self.add_handler('lrstr', self._trade_manager.list_running_strategies)
-        self.add_handler('startstr', partial(
+        self.add_handler('list_strategies', self.list_strategies)
+        self.add_handler('list_running_strategies',
+                         self._trade_manager.list_running_strategies)
+        self.add_handler('start_strategy', partial(
             self.contract_handler, self._trade_manager.start_strategy))
-        self.add_handler('stopstr', self._trade_manager.stop_strategy)
-        self.add_handler('mstr', self._mock_manager.test_strategy)
+        self.add_handler('stop_strategy', self._trade_manager.stop_strategy)
+        self.add_handler('run_mock_strategy', self._mock_manager.test_strategy)
         self.add_handler('tod', self._trade_manager.place_order)
         self.add_handler('tcod', self._trade_manager.cancel_order)
 
