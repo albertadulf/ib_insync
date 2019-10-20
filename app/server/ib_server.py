@@ -1,9 +1,9 @@
 import asyncio
 from dataclasses import dataclass
 import sys
-from typing import Any, Callable, Dict, List
+from typing import Callable, Dict
 
-from app.config_loader import ConfigLoader
+from app.ib_config import IbConfig, loadConfig
 from app.console.console_handler import ConsoleHandler
 from app.dispatcher import Dispatcher
 from app.redis.redis_client import RedisHandler
@@ -28,24 +28,6 @@ kWorkerExpiredPeriod = 4000
 
 
 @dataclass
-class ServerConfig(object):
-    cmd_redis_ip: str = 'localhost'
-    cmd_redis_port: int = 6379
-    ib_ip: str = '127.0.0.1'
-    ib_port: int = 4002
-    client_id: int = 3
-    default_contracts: List[Dict[str, Any]] = (
-        {'secType': 'CMDTY',
-         'symbol': 'XAGUSD',
-         'exchange': 'SMART',
-         'currency': 'USD'},
-        {'secType': 'CMDTY',
-         'symbol': 'XAUUSD',
-         'exchange': 'SMART',
-         'currency': 'USD'}, )
-
-
-@dataclass
 class WorkerItem(object):
     sid: str
     worker_type: int = 0
@@ -59,8 +41,8 @@ class WorkerItem(object):
 class IbServer(BaseServer):
     log_file = 'ib_server'
 
-    def __init__(self, config: ServerConfig) -> None:
-        self._config: ServerConfig = config
+    def __init__(self, config: IbConfig) -> None:
+        self._config: IbConfig = config
         self._log = Log.create(Log.path(self.log_file))
         self._logger = self._log.get_logger('server')
         self._clients: Dict[str, WorkerItem] = {}
@@ -174,8 +156,7 @@ class IbServer(BaseServer):
 
 
 async def main():
-    config = ServerConfig()
-    config = await ConfigLoader.load('app/server/config.json', config)
+    config = await loadConfig()
     if len(sys.argv) > 1:
         config.client_id = sys.argv[1]
     server = IbServer(config)

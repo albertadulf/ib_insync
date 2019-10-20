@@ -1,5 +1,4 @@
 import asyncio
-from dataclasses import dataclass
 import json
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
@@ -9,7 +8,7 @@ from prompt_toolkit.shortcuts.prompt import PromptSession
 from prompt_toolkit.styles import Style
 
 from app.client_base import ClientBase
-from app.config_loader import ConfigLoader
+from app.ib_config import IbConfig, loadConfig
 from app.server.protocols import (
     ResponseStatus,
     kWorkerTypeConsole,
@@ -32,18 +31,12 @@ style = Style.from_dict({
 })
 
 
-@dataclass
-class ConsoleConfig(object):
-    cmd_redis_ip: str = 'localhost'
-    cmd_redis_port: int = 6379
-
-
 class ConsoleClient(ClientBase):
     log_file = 'console'
 
-    def __init__(self, config: ConsoleConfig) -> None:
+    def __init__(self, config: IbConfig) -> None:
         self._log = Log.create(Log.path(self.log_file))
-        self._config = config
+        self._config: IbConfig = config
         ClientBase.__init__(
             self, self._log.get_logger('consoleclient'), kWorkerTypeConsole,
             cmd_redis_ip=self._config.cmd_redis_ip,
@@ -86,8 +79,7 @@ class ConsoleClient(ClientBase):
 
 
 async def test():
-    config = ConsoleConfig()
-    config = await ConfigLoader.load('app/console/config.json', config)
+    config = await loadConfig()
     client = ConsoleClient(config)
     await client.initialize()
 
