@@ -8,7 +8,7 @@ import app.coolq.coolq_client as coolqClient
 kOrderPattern = re.compile(r'^\s*([\d\.]+)元?\s*(卖|买)\s*(\d+)股(\d+)')
 kIntPattern = re.compile(r'\d+')
 kStrategyPattern = re.compile(r'^\s*(策略)?(\w+)\s*股票(\d+)')
-
+coolqClient.get_coolq_client()
 
 async def send_command(message: str):
     client = coolqClient.get_coolq_client()
@@ -34,7 +34,12 @@ async def help(session: CommandSession):
                 '策略状况: 列出当前正在执行的策略的情况',
                 '执行策略: 开始执行指定策略',
                 '停止策略: 停止正在执行的策略']
-    await session.send('\n'.join(help_doc))
+    split_line = 6
+    while len(help_doc) > 0:
+        temp = help_doc[0:split_line]
+        help_doc = help_doc[split_line:]
+        msg = '\n'.join(temp)
+        await session.send(msg)
 
 
 @on_command('portfolio', aliases=('投资', '投资组合', '组合'))
@@ -228,7 +233,8 @@ async def start_strategy(session: CommandSession):
     command = session.get('command', prompt='请输入策略号和股票id，如:\n策略medium股票0')
     m = kStrategyPattern.match(command)
     if not m:
-        session.send('参数错误')
+        await session.send('参数错误')
+        return
     await send_command(f'start_strategy {m.group(3)} {m.group(2)}')
 
 

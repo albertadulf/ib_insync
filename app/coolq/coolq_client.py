@@ -39,7 +39,7 @@ class CoolqClient(ClientBase):
             await asyncio.sleep(1)
             find_gateway_command = 'grep ibgateway'
             process = await asyncio.create_subprocess_shell(
-                f'ps -A | {find_gateway_command}',
+                f'ps -aux | {find_gateway_command}',
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE)
             stdout, stderr = await process.communicate()
@@ -87,20 +87,22 @@ class CoolqClient(ClientBase):
 
 
 _coolq_client: Optional[CoolqClient] = None
-
+_inited = False
 
 async def init():
     config = await loadConfig()
     global _coolq_client
     _coolq_client = CoolqClient(config)
+    global _inited
+    _inited = True
     await _coolq_client.initialize()
 
 
 def get_coolq_client() -> CoolqClient:
+    if not _inited:
+      asyncio.get_event_loop().run_until_complete(init())
     return _coolq_client
 
-
-asyncio.get_event_loop().run_until_complete(init())
 
 if __name__ == '__main__':
     nonebot.init(coolq_config)
