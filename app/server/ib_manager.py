@@ -12,12 +12,13 @@ from ib_insync import Contract, IB, LimitOrder, Order, Trade
 class IbManager(object):
     log_file = 'ib_manager'
 
-    def __init__(self, ip: str, port: int, client_id: int):
+    def __init__(self, ip: str, port: int,
+                 client_id: int, contract_manager: ContractManager):
         self._ib = IB()
         self._ib_ip: str = ip
         self._ib_port: int = port
         self._client_id: int = client_id
-        self._contract_manager: ContractManager = ContractManager()
+        self._contract_manager: ContractManager = contract_manager
         self._subscribed_mkt_contracts: List[str] = []
         self._subscribed_mkt_depth_contracts: List[str] = []
         self._log: Log = Log.create(Log.path(self.log_file))
@@ -59,8 +60,6 @@ class IbManager(object):
             self._ib.reqMktDepth(contract)
 
     async def initialize(self):
-        if not self._contract_manager.initialized():
-            await self._contract_manager.initialize()
         if self._ib.isConnected():
             return
         try:
@@ -81,40 +80,73 @@ class IbManager(object):
         contracts = [symbol.contract.nonDefaults() for symbol in symbols]
         return contracts
 
+    def get_contracts(self) -> str:
+        return str([alias for alias
+                    in self._contract_manager.get_available_contracts()])
+
+    def add_contract(self, *args) -> str:
+        if len(args) < 3:
+            return 'invalid arguments'
+        self._contract_manager.add_contract(*args)
+        return f'successfully add contract {args}'
+
+    def get_contract(self, alias: str) -> Contract:
+        return self._contract_manager.get_contract(alias)
+
     def make_contract(self, **kwargs) -> Contract:
         return Contract.create(**kwargs)
 
-    def sub_market(self, contract: Contract) -> str:
-        if contract in self._subscribed_mkt_contracts:
-            return 'already subscribe {}'.format(str(contract))
-        self._subscribed_mkt_contracts.append(contract)
+    def sub_market(self, alias: str) -> str:
+        if alias == "":
+            return "empty symbol"
+        alias = alias.upper()
+        if alias in self._subscribed_mkt_contracts:
+            return f'already subscribe {alias}'
+        contract = self._contract_manager.get_contract(alias)
+        if contract is None:
+            return f'subscribe failed, no such symbol: {alias}'
+        self._subscribed_mkt_contracts.append(alias)
         self._ib.reqMktData(contract)
-        return 'subscribe {} success'.format(str(contract))
+        return f'subscribe {alias} success'
 
-    def unsub_market(self, contract: Contract) -> str:
-        if contract not in self._subscribed_mkt_contracts:
-            return 'not ever subscribe {}'.format(str(contract))
-        self._subscribed_mkt_contracts.append(contract)
+    def unsub_market(self, alias: str) -> str:
+        alias = alias.upper()
+        if alias not in self._subscribed_mkt_contracts:
+            return f'not ever subscribe {alias}'
+        contract = self._contract_manager.get_contract(alias)
         self._ib.cancelMktData(contract)
-        return 'unsubscribe {} success'.format(str(contract))
+        self._subscribed_mkt_contracts.remove(alias)
+        return f'unsubscribe {alias} success'
 
-    def sub_market_depth(self, contract: Contract) -> str:
-        if contract in self._subscribed_mkt_depth_contracts:
-            return 'already subscribe depth {}'.format(str(contract))
-        self._subscribed_mkt_depth_contracts.append(contract)
+    def sub_market_depth(self, alias: str) -> str:
+        if alias == "":
+            return "empty symbol"
+        alias = alias.upper()
+        if alias in self._subscribed_mkt_depth_contracts:
+            return f'already subscribe depth {alias}'
+        contract = self._contract_manager.get_contract(alias)
+        if contract is None:
+            return f'subscribe depth failed, no such symbol: {alias}'
+        self._subscribed_mkt_depth_contracts.append(alias)
         self._ib.reqMktDepth(contract)
-        return 'subscribe depth {} success'.format(str(contract))
+        return f'subscribe depth {alias} success'
 
-    def unsub_market_depth(self, contract: Contract) -> str:
-        if contract not in self._subscribed_mkt_depth_contracts:
-            return 'not ever subscribe depth {}'.format(str(contract))
-        self._subscribed_mkt_contracts.remove(contract)
+    def unsub_market_depth(self, alias: str) -> str:
+        alias = alias.upper()
+        if alias not in self._subscribed_mkt_depth_contracts:
+            return f'not ever subscribe depth {alias}'
+        contract = self._contract_manager.get_contract(alias)
         self._ib.cancelMktDepth(contract)
-        return 'unsubscribe depth {} success'.format(str(contract))
+        self._subscribed_mkt_depth_contracts.remove(alias)
+        return f'unsubscribe depth {alias} success'
 
     def place_order(
-            self, contract: Contract, side: str,
+            self, alias: str, side: str,
             size: int, price: float) -> str:
+        alias = alias.upper()
+        contract = self._contract_manager.get_contract(alias)
+        if contract is None:
+            return f'order failed: no symbol {alias}'
         trade = self._place_order(contract, side, size, price)
         return str(trade)
 

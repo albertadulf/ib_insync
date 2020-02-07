@@ -10,15 +10,17 @@ from ib_insync import Contract
 @dataclass
 class ContractItem(object):
     alias: str
-    con_id: int
     sec_type: str
+    currency: str
     contract: Contract
 
-    def __init__(self, alias: str, con_id: int, sec_type: str) -> None:
+    def __init__(self, alias: str, sec_type: str, currency: str) -> None:
         self.alias = alias.upper()
-        self.con_id = con_id
         self.sec_type = sec_type
-        self.contract = Contract.create(conId=con_id, secType=sec_type)
+        self.currency = currency
+        self.contract = Contract.create(
+            secType=sec_type, symbol=alias,
+            exchange='SMART', currency=currency)
 
     @staticmethod
     def generate_item(line):
@@ -29,10 +31,11 @@ class ContractItem(object):
         return item
 
     def pack(self) -> str:
-        return f'{self.alias},{self.con_id},{self.sec_type}'
+        return f'{self.alias},{self.sec_type},{self.currency}'
 
     def __str__(self) -> str:
-        return f'alias:{self.alias},id:{self.con_id},type:{self.sec_type}'
+        return f'alias:{self.alias},type:{self.sec_type},' + \
+            f'currency:{self.currency}'
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -45,7 +48,6 @@ class ContractManager(object):
         self._contract_file: str = contract_file
         self._contracts: Dict[str, ContractItem] = {}
         self._write_back_task: asyncio.Task = None
-        self._initialized: bool = False
 
     def _set_dirty(self) -> None:
         if self._write_back_task is None:
@@ -73,9 +75,9 @@ class ContractManager(object):
     def get_available_contracts(self) -> List[str]:
         return self._contracts.keys()
 
-    def add_contract(self, alias: str, con_id: int, sec_type: str) -> None:
+    def add_contract(self, alias: str, sec_type: str, currency: str) -> None:
         if self._add_contract_item(ContractItem.generate_item(
-                f'{alias},{con_id},{sec_type}')):
+                f'{alias},{sec_type},{currency}')):
             self._set_dirty()
 
     def remove_contract(self, alias: str) -> None:
@@ -93,10 +95,6 @@ class ContractManager(object):
                 if item is None:
                     continue
                 self._add_contract_item(item)
-        self._initialized = True
-
-    def initialized(self) -> bool:
-        return self._initialized
 
 
 async def test():

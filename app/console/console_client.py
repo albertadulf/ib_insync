@@ -21,7 +21,7 @@ from app.utils.log import Log
 completer = WordCompleter([
     'find_symbols', 'subscribe_market', 'unsubscribe_market',
     'subscribe_market_depth', 'unsubscribe_market_depth', 'order',
-    'cancel_order', 'contract', 'orders', 'portfolio', 'cash',
+    'cancel_order', 'contracts', 'add_contract', 'orders', 'portfolio', 'cash',
     'list_strategies', 'list_running_strategies', 'start_strategy',
     'stop_strategy', 'run_mock_strategy'], ignore_case=True)
 style = Style.from_dict({

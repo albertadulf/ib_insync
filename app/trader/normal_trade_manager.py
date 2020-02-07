@@ -122,9 +122,12 @@ class NormalTradeManager(TradeManagerBase):
             print(f'order status: {trade.orderStatus.status}')
             print(str(trade))
 
-    def start_strategy(self, contract: Contract, name: str) -> str:
+    def start_strategy(self, alias: str, name: str) -> str:
         if name not in Strategies:
             return f'Failed: no {name} strategy'
+        contract = self._ib_manager.get_contract(alias)
+        if contract is None:
+            return f'start strategy {name} failed, no symbol {alias}'
         sid = self._get_available_sid()
         item = StrategyItem(
             sid, name, contract, Strategies[name](sid, self))

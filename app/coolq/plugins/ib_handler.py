@@ -5,10 +5,12 @@ import re
 import app.coolq.coolq_client as coolqClient
 
 
-kOrderPattern = re.compile(r'^\s*([\d\.]+)元?\s*(卖|买)\s*(\d+)股(\d+)')
+kOrderPattern = re.compile(r'^\s*([\d\.]+)元?\s*(卖|买)\s*(\d+)股(\w+)')
 kIntPattern = re.compile(r'\d+')
-kStrategyPattern = re.compile(r'^\s*(策略)?(\w+)\s*股票(\d+)')
+kStrPattern = re.compile(r'\w+')
+kStrategyPattern = re.compile(r'^\s*(策略)?(\w+)\s*股票(\w+)')
 coolqClient.get_coolq_client()
+
 
 async def send_command(message: str):
     client = coolqClient.get_coolq_client()
@@ -54,7 +56,7 @@ async def cash(session: CommandSession):
 
 @on_command('contract', aliases=('股票',))
 async def contract(session: CommandSession):
-    await send_command('contract')
+    await send_command('contracts')
 
 
 @on_command('orders', aliases=('订单',))
@@ -129,7 +131,7 @@ async def _(session: CommandSession):
 @on_command('subscribe_market', aliases=('订阅行情', '订阅市场'))
 async def subscribe_market(session: CommandSession):
     contract_id = session.get('contract_id', prompt='请输入股票id')
-    if not kIntPattern.match(contract_id):
+    if not kStrPattern.match(contract_id):
         session.send('无效股票id')
         return
     await send_command(f'subscribe_market {contract_id}')
@@ -152,7 +154,7 @@ async def _(session: CommandSession):
 @on_command('unsubscribe_market', aliases=('退订行情', '退订市场'))
 async def unsubscribe_market(session: CommandSession):
     contract_id = session.get('contract_id', prompt='请输入股票id')
-    if not kIntPattern.match(contract_id):
+    if not kStrPattern.match(contract_id):
         session.send('无效股票id')
         return
     await send_command(f'unsubscribe_market {contract_id}')
@@ -175,7 +177,7 @@ async def _(session: CommandSession):
 @on_command('subscribe_market_depth', aliases=('订阅深度',))
 async def subscribe_market_depth(session: CommandSession):
     contract_id = session.get('contract_id', prompt='请输入股票id')
-    if not kIntPattern.match(contract_id):
+    if not kStrPattern.match(contract_id):
         session.send('无效股票id')
         return
     await send_command(f'subscribe_market_depth {contract_id}')
@@ -198,7 +200,7 @@ async def _(session: CommandSession):
 @on_command('unsubscribe_market_depth', aliases=('退订深度',))
 async def unsubscribe_market_depth(session: CommandSession):
     contract_id = session.get('contract_id', prompt='请输入股票id')
-    if not kIntPattern.match(contract_id):
+    if not kStrPattern.match(contract_id):
         session.send('无效股票id')
         return
     await send_command(f'unsubscribe_market_depth {contract_id}')

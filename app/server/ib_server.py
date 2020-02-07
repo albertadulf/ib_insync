@@ -5,6 +5,7 @@ from typing import Callable, Dict
 
 from app.ib_config import IbConfig, loadConfig
 from app.console.console_handler import ConsoleHandler
+from app.contract_manager import ContractManager
 from app.dispatcher import Dispatcher
 from app.redis.redis_client import RedisHandler
 from app.server.base_server import BaseServer
@@ -51,10 +52,12 @@ class IbServer(BaseServer):
         self._available_channel_id: int = 0
         self._sweep_task: asyncio.Task = None
         self._console_handler: ConsoleHandler = None
+        self._contract_manager: ContractManager = ContractManager()
         self._transporter = Transporter()
         self._client_id = config.client_id
         self._ib_manager: IbManager = IbManager(
-            self._config.ib_ip, self._config.ib_port, self._client_id)
+            self._config.ib_ip, self._config.ib_port,
+            self._client_id, self._contract_manager)
 
     async def initialize(self) -> None:
         self._redis = await RedisHandler.create(
@@ -64,10 +67,10 @@ class IbServer(BaseServer):
         self.add_dispatcher(Ping, self.on_ping)
         await self._redis.subscribe(kCmdChannel, self.on_cmd)
         self._sweep_task = asyncio.create_task(self._sweep())
+        await self._contract_manager.initialize()
         await self._ib_manager.initialize()
-        self._console_handler = ConsoleHandler(self, self._redis, self._log)
-        self._console_handler.make_default_contracts(
-            self._config.default_contracts)
+        self._console_handler = ConsoleHandler(
+            self, self._redis, self._log)
 
     def ib_manager(self) -> IbManager:
         return self._ib_manager
