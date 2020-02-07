@@ -157,7 +157,7 @@ class IbManager(object):
         if side not in ('SELL', 'BUY'):
             return [f'invalid order type: {side}']
         price = float(f'{round(float(price), 3):.3f}')
-        order = LimitOrder(side, size, price, tif='GTC')
+        order = LimitOrder(side, size, price, tif='GTC', outsideRth=True)
         trade = self._ib.placeOrder(contract, order)
         return trade
 
