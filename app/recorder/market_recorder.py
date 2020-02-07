@@ -20,15 +20,20 @@ class MarketRecorder(object):
 
     def on_market_data(self, tickers: Any) -> None:
         for ticker in tickers:
-            depth = min(len(ticker.domBids), len(ticker.domAsks))
-            if depth == 0:
-                continue
             symbol = ticker.contract.symbol
             file_name = f'{symbol}'
             data = [file_name, ticker.time.timestamp()]
-            for i in range(0, depth):
-                data.append(ticker.domBids[i].price)
-                data.append(ticker.domBids[i].size)
-                data.append(ticker.domAsks[i].price)
-                data.append(ticker.domAsks[i].size)
+            depth = min(len(ticker.domBids), len(ticker.domAsks))
+            if depth == 0:
+                data.append(ticker.bid)
+                data.append(ticker.bidSize)
+                data.append(ticker.ask)
+                data.append(ticker.askSize)
+            else:
+                for i in range(0, depth):
+                    data.append(ticker.domBids[i].price)
+                    data.append(ticker.domBids[i].size)
+                    data.append(ticker.domAsks[i].price)
+                    data.append(ticker.domAsks[i].size)
+            print(data)
             self._queue.put_nowait(tuple(data))

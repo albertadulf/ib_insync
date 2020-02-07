@@ -156,9 +156,10 @@ class IbServer(BaseServer):
 
 
 async def main():
-    config = await loadConfig()
+    config_file = 'app/config.json'
     if len(sys.argv) > 1:
-        config.client_id = sys.argv[1]
+        config_file = sys.argv[1]
+    config = await loadConfig(config_file)
     server = IbServer(config)
     await server.initialize()
 

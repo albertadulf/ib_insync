@@ -1,5 +1,6 @@
 import asyncio
 import json
+import sys
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.eventloop.defaults import use_asyncio_event_loop
@@ -79,7 +80,10 @@ class ConsoleClient(ClientBase):
 
 
 async def test():
-    config = await loadConfig()
+    config_file = 'app/config.json'
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    config = await loadConfig(config_file)
     client = ConsoleClient(config)
     await client.initialize()
 

@@ -1,6 +1,7 @@
 import asyncio
 from typing import List
 
+from app.contract_manager import ContractManager
 from app.recorder.account_recorder import AccountRecorder
 from app.recorder.market_recorder import MarketRecorder
 from app.recorder.recorder import Recorder
@@ -16,6 +17,7 @@ class IbManager(object):
         self._ib_ip: str = ip
         self._ib_port: int = port
         self._client_id: int = client_id
+        self._contract_manager: ContractManager = ContractManager()
         self._subscribed_mkt_contracts: List[str] = []
         self._subscribed_mkt_depth_contracts: List[str] = []
         self._log: Log = Log.create(Log.path(self.log_file))
@@ -57,6 +59,8 @@ class IbManager(object):
             self._ib.reqMktDepth(contract)
 
     async def initialize(self):
+        if not self._contract_manager.initialized():
+            await self._contract_manager.initialize()
         if self._ib.isConnected():
             return
         try:

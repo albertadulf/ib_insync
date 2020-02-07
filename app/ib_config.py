@@ -20,10 +20,14 @@ class IbConfig(object):
         {'secType': 'CMDTY',
          'symbol': 'XAUUSD',
          'exchange': 'SMART',
+         'currency': 'USD'},
+        {'secType': 'STK',
+         'symbol': 'TSLA',
+         'exchange': 'SMART',
          'currency': 'USD'}, )
 
 
-async def loadConfig() -> IbConfig:
+async def loadConfig(config_file) -> IbConfig:
     config = IbConfig()
-    config = await ConfigLoader.load('app/config.json', config)
+    config = await ConfigLoader.load(config_file, config)
     return config
