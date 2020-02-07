@@ -1,0 +1,8 @@
+{
+    "cmd_redis_ip": "localhost",
+    "cmd_redis_port": 6381,
+    "ib_ip": "127.0.0.1",
+    "ib_port": 4002,
+    "client_id": 666,
+    "master_qq": 413707375
+}
