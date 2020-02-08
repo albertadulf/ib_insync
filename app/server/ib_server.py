@@ -44,11 +44,13 @@ class IbServer(BaseServer):
 
     def __init__(self, config: IbConfig) -> None:
         self._config: IbConfig = config
+        self._cmd_in_channel: str = f'{kCmdChannel}:{config.client_id}'
+        self._allocator_channel: str = f'{kCmdAllocatorChannel}:' \
+                                       + f'{config.client_id}'
         self._log = Log.create(Log.path(self.log_file))
         self._logger = self._log.get_logger('server')
         self._clients: Dict[str, WorkerItem] = {}
         self._redis: RedisHandler = None
-        self._clients: Dict[str, WorkerItem] = {}
         self._available_channel_id: int = 0
         self._sweep_task: asyncio.Task = None
         self._console_handler: ConsoleHandler = None
@@ -65,7 +67,7 @@ class IbServer(BaseServer):
         self._dispatcher = Dispatcher()
         self.add_dispatcher(WorkerJoinRequest, self.on_join_request)
         self.add_dispatcher(Ping, self.on_ping)
-        await self._redis.subscribe(kCmdChannel, self.on_cmd)
+        await self._redis.subscribe(self._cmd_in_channel, self.on_cmd)
         self._sweep_task = asyncio.create_task(self._sweep())
         await self._contract_manager.initialize()
         await self._ib_manager.initialize()
@@ -126,7 +128,7 @@ class IbServer(BaseServer):
             self._logger.info(
                 'Join request: %s, sid: %s, invalid sid',
                 worker_type_str(request.wtype), request.sid)
-            await self.send_packet(kCmdAllocatorChannel, response)
+            await self.send_packet(self._allocator_channel, response)
             return
         if request.sid in self._clients:
             client = self._clients[request.sid]
@@ -136,7 +138,7 @@ class IbServer(BaseServer):
             self._logger.info(
                 'Join request: %s, sid: %s, already joined with channel: %s',
                 worker_type_str(request.wtype), client.sid, client.channel)
-            await self.send_packet(kCmdAllocatorChannel, response)
+            await self.send_packet(self._allocator_channel, response)
             return
         channel = self._get_available_channel()
         item = WorkerItem(request.sid, request.wtype, channel)
@@ -147,7 +149,7 @@ class IbServer(BaseServer):
         self._logger.info(
             'Join request: %s, sid: %s, successfully with channel: %s',
             worker_type_str(request.wtype), request.sid, channel)
-        await self.send_packet(kCmdAllocatorChannel, response)
+        await self.send_packet(self._allocator_channel, response)
 
     async def on_ping(self, ping: Ping) -> None:
         if ping.sid not in self._clients:

@@ -24,11 +24,9 @@ class CoolqClient(ClientBase):
 
     def __init__(self, config: IbConfig) -> None:
         self._log = Log.create(Log.path(self.log_file))
-        self._config = config
         ClientBase.__init__(
-            self, self._log.get_logger('coolqclient'), kWorkerTypeConsole,
-            cmd_redis_ip=self._config.cmd_redis_ip,
-            cmd_redis_port=self._config.cmd_redis_port)
+            self, self._log.get_logger('coolqclient'),
+            kWorkerTypeConsole, config)
         self._check_task: asyncio.Task = None
         self._error_report_times = 0
         self.add_dispatcher(ConsoleCommandResponse,
@@ -89,6 +87,7 @@ class CoolqClient(ClientBase):
 _coolq_client: Optional[CoolqClient] = None
 _inited = False
 
+
 async def init():
     config = await loadConfig()
     global _coolq_client
@@ -100,7 +99,7 @@ async def init():
 
 def get_coolq_client() -> CoolqClient:
     if not _inited:
-      asyncio.get_event_loop().run_until_complete(init())
+        asyncio.get_event_loop().run_until_complete(init())
     return _coolq_client
 
 

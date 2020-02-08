@@ -37,11 +37,9 @@ class ConsoleClient(ClientBase):
 
     def __init__(self, config: IbConfig) -> None:
         self._log = Log.create(Log.path(self.log_file))
-        self._config: IbConfig = config
         ClientBase.__init__(
-            self, self._log.get_logger('consoleclient'), kWorkerTypeConsole,
-            cmd_redis_ip=self._config.cmd_redis_ip,
-            cmd_redis_port=self._config.cmd_redis_port)
+            self, self._log.get_logger('consoleclient'),
+            kWorkerTypeConsole, config)
         self._cmd_task: asyncio.Task = None
         self._prompt_session: PromptSession = PromptSession(
             completer=completer, style=style)

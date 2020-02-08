@@ -2,6 +2,7 @@ import asyncio
 from typing import Any, Callable
 
 from app.dispatcher import Dispatcher
+from app.ib_config import IbConfig
 from app.redis.redis_client import RedisHandler
 from app.server.protocols import (
     kCmdChannel,
@@ -20,12 +21,13 @@ from app.utils.log import Log
 
 class ClientBase(object):
     def __init__(self, logger: Any, worker_type: int,
-                 cmd_redis_ip: str = 'localhost',
-                 cmd_redis_port: int = 6379) -> None:
+                 config: IbConfig) -> None:
         self._logger = logger
         self._worker_type: int = worker_type
-        self._cmd_redis_ip: str = cmd_redis_ip
-        self._cmd_redis_port: int = cmd_redis_port
+        self._config: IbConfig = config
+        self._cmd_out_channel: str = f'{kCmdChannel}:{config.client_id}'
+        self._allocator_channel: str = f'{kCmdAllocatorChannel}:' \
+                                       + f'{config.client_id}'
         self._dispatcher: Dispatcher = Dispatcher()
         self._last_active_ts: int = 0
         self._rtt: int = -1
@@ -85,7 +87,7 @@ class ClientBase(object):
             self._cmd_channel = response.channel
             self._join_task.cancel()
             self._join_task = None
-            await self._redis.unsubscribe(kCmdAllocatorChannel)
+            await self._redis.unsubscribe(self._allocator_channel)
             await self._redis.subscribe(response.channel, self._on_message)
             self._keep_alive_task = asyncio.create_task(self._keep_alive())
             await self.on_client_ready()
@@ -95,7 +97,7 @@ class ClientBase(object):
 
     async def send_packet(self, packet: ProtocolBase) -> None:
         data = Transporter.serialize(packet.pack())
-        await self._redis.publish(kCmdChannel, data)
+        await self._redis.publish(self._cmd_out_channel, data)
 
     async def on_client_ready(self) -> None:
         # need to implement by derived client
@@ -104,7 +106,7 @@ class ClientBase(object):
 
     async def join_channel(self) -> None:
         self._join_task = asyncio.create_task(self._on_join_timeout())
-        await self._redis.subscribe(kCmdAllocatorChannel, self._on_message)
+        await self._redis.subscribe(self._allocator_channel, self._on_message)
         request = WorkerJoinRequest()
         request.sid = self.sid()
         request.wtype = self._worker_type
@@ -114,7 +116,7 @@ class ClientBase(object):
 
     async def initialize(self) -> None:
         self._redis = await RedisHandler.create(
-            ip=self._cmd_redis_ip, port=self._cmd_redis_port)
+            ip=self._config.cmd_redis_ip, port=self._config.cmd_redis_port)
         self._sid = unique_id()
         await self.join_channel()
 
