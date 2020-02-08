@@ -105,7 +105,7 @@ class IbServer(BaseServer):
     def _get_available_channel(self) -> str:
         cid = self._available_channel_id
         self._available_channel_id += 1
-        return f'ib:clt:{cid}'
+        return f'ib:clt:{self._config.client_id}:{cid}'
 
     async def send_packet(self, channel: str, packet: ProtocolBase) -> None:
         data = Transporter.serialize(packet.pack())
