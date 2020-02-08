@@ -52,12 +52,16 @@ class IbManager(object):
         self._keep_connection_task = None
 
     def _recover_subscriptions(self) -> None:
-        for contract in self._subscribed_mkt_contracts:
-            self._logger.info(f'recover subscribe {str(contract)}')
-            self._ib.reqMktData(contract)
-        for contract in self._subscribed_mkt_depth_contracts:
-            self._logger.info(f'recover subscribe depth {str(contract)}')
-            self._ib.reqMktDepth(contract)
+        for alias in self._subscribed_mkt_contracts:
+            self._logger.info(f'recover subscribe {alias}')
+            contract = self.get_contract(alias)
+            if contract is not None:
+                self._ib.reqMktData(contract)
+        for alias in self._subscribed_mkt_depth_contracts:
+            self._logger.info(f'recover subscribe depth {alias}')
+            contract = self.get_contract(alias)
+            if contract is not None:
+                self._ib.reqMktDepth(contract)
 
     async def initialize(self):
         if self._ib.isConnected():
@@ -102,7 +106,7 @@ class IbManager(object):
         alias = alias.upper()
         if alias in self._subscribed_mkt_contracts:
             return f'already subscribe {alias}'
-        contract = self._contract_manager.get_contract(alias)
+        contract = self.get_contract(alias)
         if contract is None:
             return f'subscribe failed, no such symbol: {alias}'
         self._subscribed_mkt_contracts.append(alias)
@@ -113,7 +117,7 @@ class IbManager(object):
         alias = alias.upper()
         if alias not in self._subscribed_mkt_contracts:
             return f'not ever subscribe {alias}'
-        contract = self._contract_manager.get_contract(alias)
+        contract = self.get_contract(alias)
         self._ib.cancelMktData(contract)
         self._subscribed_mkt_contracts.remove(alias)
         return f'unsubscribe {alias} success'
@@ -124,7 +128,7 @@ class IbManager(object):
         alias = alias.upper()
         if alias in self._subscribed_mkt_depth_contracts:
             return f'already subscribe depth {alias}'
-        contract = self._contract_manager.get_contract(alias)
+        contract = self.get_contract(alias)
         if contract is None:
             return f'subscribe depth failed, no such symbol: {alias}'
         self._subscribed_mkt_depth_contracts.append(alias)
@@ -135,7 +139,7 @@ class IbManager(object):
         alias = alias.upper()
         if alias not in self._subscribed_mkt_depth_contracts:
             return f'not ever subscribe depth {alias}'
-        contract = self._contract_manager.get_contract(alias)
+        contract = self.get_contract(alias)
         self._ib.cancelMktDepth(contract)
         self._subscribed_mkt_depth_contracts.remove(alias)
         return f'unsubscribe depth {alias} success'
@@ -144,7 +148,7 @@ class IbManager(object):
             self, alias: str, side: str,
             size: int, price: float) -> str:
         alias = alias.upper()
-        contract = self._contract_manager.get_contract(alias)
+        contract = self.get_contract(alias)
         if contract is None:
             return f'order failed: no symbol {alias}'
         trade = self._place_order(contract, side, size, price)
