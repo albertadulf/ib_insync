@@ -16,9 +16,13 @@ kConsoleCommandResponseUri = 6
 # WorkerTypes
 kWorkerTypeConsole = 0
 
+# Data channel protocols
+kMarketDataUri = 0
+
 # Redis channels
 kCmdChannel = 'ib:cmd'
 kCmdAllocatorChannel = 'ib:aloc'
+kDataChannel = 'ib:data'
 
 
 def worker_type_str(worker_type: int) -> str:
@@ -130,6 +134,18 @@ class ConsoleCommandResponse(ProtocolBase):
         uri=kConsoleCommandResponseUri,
         status=0,
         msg='')
+    __slots__ = defaults.keys()
+
+
+class MarketData(ProtocolBase):
+    defaults = dict(
+        uri=kMarketDataUri,
+        alias='',
+        ts=0,
+        bid_prices=[],
+        bid_sizes=[],
+        ask_prices=[],
+        ask_sizes=[])
     __slots__ = defaults.keys()
 
 

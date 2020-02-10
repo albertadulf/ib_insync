@@ -10,6 +10,7 @@ from app.dispatcher import Dispatcher
 from app.redis.redis_client import RedisHandler
 from app.server.base_server import BaseServer
 from app.server.ib_manager import IbManager
+from app.server.market_data_handler import MarketDataHandler
 from app.server.protocols import (
     kCmdChannel,
     kCmdAllocatorChannel,
@@ -55,11 +56,13 @@ class IbServer(BaseServer):
         self._sweep_task: asyncio.Task = None
         self._console_handler: ConsoleHandler = None
         self._contract_manager: ContractManager = ContractManager()
+        self._market_data_handler: MarketDataHandler = None
         self._transporter = Transporter()
         self._client_id = config.client_id
         self._ib_manager: IbManager = IbManager(
             self._config.ib_ip, self._config.ib_port,
-            self._client_id, self._contract_manager)
+            self._client_id, self._contract_manager,
+            self._config.data_subscriber)
 
     async def initialize(self) -> None:
         self._redis = await RedisHandler.create(
@@ -71,6 +74,9 @@ class IbServer(BaseServer):
         self._sweep_task = asyncio.create_task(self._sweep())
         await self._contract_manager.initialize()
         await self._ib_manager.initialize()
+        self._market_data_handler = MarketDataHandler(
+            self._ib_manager._ib, self._config.data_subscriber, self._redis)
+        await self._market_data_handler.initialize()
         self._console_handler = ConsoleHandler(
             self, self._redis, self._log)
 

@@ -75,7 +75,8 @@ class ContractManager(object):
     def get_available_contracts(self) -> List[str]:
         return self._contracts.keys()
 
-    def add_contract(self, alias: str, sec_type: str, currency: str) -> None:
+    def add_contract(self, alias: str, sec_type: str = 'STK',
+                     currency: str = 'USD') -> None:
         if self._add_contract_item(ContractItem.generate_item(
                 f'{alias},{sec_type},{currency}')):
             self._set_dirty()

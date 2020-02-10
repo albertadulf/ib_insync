@@ -11,6 +11,7 @@ class IbConfig(object):
     ib_port: int = 4002
     client_id: int = 3
     master_qq: int = 413707375
+    data_subscriber: bool = False
 
 
 async def loadConfig(config_file) -> IbConfig:

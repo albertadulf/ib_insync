@@ -13,7 +13,8 @@ class IbManager(object):
     log_file = 'ib_manager'
 
     def __init__(self, ip: str, port: int,
-                 client_id: int, contract_manager: ContractManager):
+                 client_id: int, contract_manager: ContractManager,
+                 data_subscriber: bool):
         self._ib = IB()
         self._ib_ip: str = ip
         self._ib_port: int = port
@@ -32,11 +33,13 @@ class IbManager(object):
         self._ib.connectedEvent += self.on_ib_connected
         self._ib.disconnectedEvent += self.on_ib_disconnected
         self._reconnect_flag: bool = False
+        self._data_subscriber: bool = data_subscriber
 
     def on_ib_connected(self) -> None:
         self._logger.info('connected with ib')
         self._reconnect_flag = False
-        self._recover_subscriptions()
+        if self._data_subscriber:
+            self._recover_subscriptions()
 
     def on_ib_disconnected(self) -> None:
         self._logger.warning('disconnected with ib')
@@ -89,7 +92,7 @@ class IbManager(object):
                     in self._contract_manager.get_available_contracts()])
 
     def add_contract(self, *args) -> str:
-        if len(args) < 3:
+        if len(args) < 1:
             return 'invalid arguments'
         self._contract_manager.add_contract(*args)
         return f'successfully add contract {args}'
@@ -101,6 +104,8 @@ class IbManager(object):
         return Contract.create(**kwargs)
 
     def sub_market(self, alias: str) -> str:
+        if not self._data_subscriber:
+            return "Failed to subscribe: not subscriber"
         if alias == "":
             return "empty symbol"
         alias = alias.upper()
@@ -114,6 +119,8 @@ class IbManager(object):
         return f'subscribe {alias} success'
 
     def unsub_market(self, alias: str) -> str:
+        if not self._data_subscriber:
+            return "Failed to unsubscribe: not subscriber"
         alias = alias.upper()
         if alias not in self._subscribed_mkt_contracts:
             return f'not ever subscribe {alias}'
@@ -123,6 +130,8 @@ class IbManager(object):
         return f'unsubscribe {alias} success'
 
     def sub_market_depth(self, alias: str) -> str:
+        if not self._data_subscriber:
+            return "Failed to subscribe depth: not subscriber"
         if alias == "":
             return "empty symbol"
         alias = alias.upper()
@@ -136,6 +145,8 @@ class IbManager(object):
         return f'subscribe depth {alias} success'
 
     def unsub_market_depth(self, alias: str) -> str:
+        if not self._data_subscriber:
+            return "Failed to unsubscribe depth: not subscriber"
         alias = alias.upper()
         if alias not in self._subscribed_mkt_depth_contracts:
             return f'not ever subscribe depth {alias}'
