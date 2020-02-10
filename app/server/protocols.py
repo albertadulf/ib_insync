@@ -12,12 +12,11 @@ kPongUri = 4
 # Console Protocols
 kConsoleCommandRequestUri = 5
 kConsoleCommandResponseUri = 6
+# Data channel protocols
+kMarketDataUri = 7
 
 # WorkerTypes
 kWorkerTypeConsole = 0
-
-# Data channel protocols
-kMarketDataUri = 0
 
 # Redis channels
 kCmdChannel = 'ib:cmd'
@@ -61,6 +60,8 @@ class ProtocolBase(Object):
                 setattr(self, k, float(v) if v else default)
             elif typ is bool:
                 setattr(self, k, bool(v) if v else default)
+            elif typ is list:
+                setattr(self, k, v if len(v) else default)
         return self
 
 
@@ -141,7 +142,7 @@ class MarketData(ProtocolBase):
     defaults = dict(
         uri=kMarketDataUri,
         alias='',
-        ts=0,
+        ts=0.0,
         bid_prices=[],
         bid_sizes=[],
         ask_prices=[],

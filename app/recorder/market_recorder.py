@@ -1,4 +1,5 @@
 import asyncio
+import math
 from typing import Any
 
 from app.recorder.recorder import Recorder
@@ -25,6 +26,8 @@ class MarketRecorder(object):
             data = [file_name, ticker.time.timestamp()]
             depth = min(len(ticker.domBids), len(ticker.domAsks))
             if depth == 0:
+                if math.isnan(ticker.bid):
+                    continue
                 data.append(ticker.bid)
                 data.append(ticker.bidSize)
                 data.append(ticker.ask)
@@ -35,5 +38,4 @@ class MarketRecorder(object):
                     data.append(ticker.domBids[i].size)
                     data.append(ticker.domAsks[i].price)
                     data.append(ticker.domAsks[i].size)
-            print(data)
             self._queue.put_nowait(tuple(data))
