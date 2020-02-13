@@ -1,6 +1,7 @@
 ib_insync/__pycache__
 dist
 build
+configs
 .vscode
 .idea
 .settings
