@@ -4,6 +4,7 @@ from typing import Dict, List, Set
 
 from app.recorder.recorder import Recorder
 from app.server.ib_manager import IbManager
+from app.server.protocols import PublishedMarketData
 from app.trader.strategy_base import MarketData, StrategyBase
 from app.trader.strategy_manager import Strategies
 from app.trader.trade_manager_base import TradeManagerBase
@@ -40,7 +41,7 @@ class NormalTradeManager(TradeManagerBase):
         # orderId: strategyId
         self._pending_orders: Dict[int, int] = {}
         self._ib.orderStatusEvent += self._on_order_status_changed
-        self._ib.pendingTickersEvent += self._on_market_data
+        self._ib_manager._events.market_data += self._on_market_data
         self._task: asyncio.Task = asyncio.create_task(self._recording())
         self._queue: asyncio.Queue = asyncio.Queue()
 
@@ -71,27 +72,14 @@ class NormalTradeManager(TradeManagerBase):
                 side, shares, avg_price, change)
         self._queue.put_nowait(data)
 
-    def _on_market_data(self, tickers: Set[Ticker]) -> None:
-        for ticker in tickers:
-            depth = min(len(ticker.domBids), len(ticker.domAsks))
-            if depth == 0:
-                continue
-            bids_price = []
-            bids_amount = []
-            asks_price = []
-            asks_amount = []
-            for i in range(0, depth):
-                bids_price.append(float(ticker.domBids[i].price))
-                bids_amount.append(int(ticker.domBids[i].size))
-                asks_price.append(float(ticker.domAsks[i].price))
-                asks_amount.append(int(ticker.domAsks[i].size))
-            data = MarketData(
-                int(ticker.time.timestamp() * 1000),
-                tuple(bids_price), tuple(bids_amount),
-                tuple(asks_price), tuple(asks_amount))
-            for strategy in self._running_strategies.values():
-                if strategy.contract == ticker.contract:
-                    strategy.impl.on_market_data(data)
+    def _on_market_data(self, market_data: PublishedMarketData) -> None:
+        data = MarketData(
+            int(market_data.ts * 1000),
+            tuple(market_data.bid_prices), tuple(market_data.bid_sizes),
+            tuple(market_data.ask_prices), tuple(market_data.ask_sizes))
+        for strategy in self._running_strategies.values():
+            if strategy.contract.symbol == market_data.alias:
+                strategy.impl.on_market_data(data)
 
     def _on_order_status_changed(self, trade: Trade) -> None:
         if trade.order.orderId not in self._pending_orders:

@@ -13,7 +13,7 @@ kPongUri = 4
 kConsoleCommandRequestUri = 5
 kConsoleCommandResponseUri = 6
 # Data channel protocols
-kMarketDataUri = 7
+kPublishedMarketDataUri = 7
 
 # WorkerTypes
 kWorkerTypeConsole = 0
@@ -138,9 +138,9 @@ class ConsoleCommandResponse(ProtocolBase):
     __slots__ = defaults.keys()
 
 
-class MarketData(ProtocolBase):
+class PublishedMarketData(ProtocolBase):
     defaults = dict(
-        uri=kMarketDataUri,
+        uri=kPublishedMarketDataUri,
         alias='',
         ts=0.0,
         bid_prices=[],

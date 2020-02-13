@@ -23,7 +23,7 @@ completer = WordCompleter([
     'subscribe_market_depth', 'unsubscribe_market_depth', 'order',
     'cancel_order', 'contracts', 'add_contract', 'orders', 'portfolio', 'cash',
     'list_strategies', 'list_running_strategies', 'start_strategy',
-    'stop_strategy', 'run_mock_strategy'], ignore_case=True)
+    'stop_strategy', 'run_mock_strategy', 'print_market'], ignore_case=True)
 style = Style.from_dict({
     'completion-menu.completion': 'bg:#008888 #ffffff',
     'completion-menu.completion.current': 'bg:#00aaaa #000000',

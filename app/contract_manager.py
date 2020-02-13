@@ -77,6 +77,7 @@ class ContractManager(object):
 
     def add_contract(self, alias: str, sec_type: str = 'STK',
                      currency: str = 'USD') -> None:
+        alias = alias.upper()
         if self._add_contract_item(ContractItem.generate_item(
                 f'{alias},{sec_type},{currency}')):
             self._set_dirty()

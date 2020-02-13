@@ -7,17 +7,19 @@ from app.redis.redis_client import RedisHandler
 from app.server.protocols import (
     kDataChannel,
     Transporter,
-    MarketData,
+    PublishedMarketData,
 )
+from app.server.server_events import ServerEvents
 from ib_insync import IB
 
 
 class MarketDataHandler(object):
     def __init__(self, ib: IB, data_subscriber: bool,
-                 redis: RedisHandler) -> None:
+                 redis: RedisHandler, events: ServerEvents) -> None:
         self._ib = ib
         self._data_subscriber = data_subscriber
         self._redis: RedisHandler = redis
+        self._events: ServerEvents = events
         self._transporter: Transporter = Transporter()
         self._dispatcher: Dispatcher = Dispatcher()
         if self._data_subscriber:
@@ -26,7 +28,8 @@ class MarketDataHandler(object):
             self._task: asyncio.Task = asyncio.create_task(
                 self._deliver_data())
         else:
-            self._dispatcher.add_dispatcher(MarketData, self.on_market_data)
+            self._dispatcher.add_dispatcher(
+                PublishedMarketData, self.on_market_data)
 
     async def _deliver_data(self):
         while True:
@@ -39,7 +42,7 @@ class MarketDataHandler(object):
 
     def broadcast_market_data(self, tickers: Any) -> None:
         for ticker in tickers:
-            market_data = MarketData()
+            market_data = PublishedMarketData()
             market_data.alias = ticker.contract.symbol
             market_data.ts = ticker.time.timestamp()
             if len(ticker.domBids) == 0:
@@ -54,8 +57,8 @@ class MarketDataHandler(object):
                 market_data.bid_sizes = [bid.size for bid in ticker.domBids]
                 market_data.ask_prices = [ask.price for ask in ticker.domAsks]
                 market_data.ask_sizes = [ask.size for ask in ticker.domAsks]
+            self._events.market_data.emit(market_data)
             data = Transporter.serialize(market_data.pack())
-            print(data)
             self._queue.put_nowait(data)
 
     async def on_data(self, message: bytes) -> None:
@@ -63,5 +66,5 @@ class MarketDataHandler(object):
         for data in messages:
             await self._dispatcher.on_message(data)
 
-    async def on_market_data(self, data: MarketData):
-        print(data)
+    async def on_market_data(self, data: PublishedMarketData):
+        self._events.market_data.emit(data)

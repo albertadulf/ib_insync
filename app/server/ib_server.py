@@ -23,6 +23,7 @@ from app.server.protocols import (
     Ping,
     Pong,
 )
+from app.server.server_events import ServerEvents
 from app.utils.common_util import tick_ms
 from app.utils.log import Log
 
@@ -58,10 +59,11 @@ class IbServer(BaseServer):
         self._contract_manager: ContractManager = ContractManager()
         self._market_data_handler: MarketDataHandler = None
         self._transporter = Transporter()
+        self._events: ServerEvents = ServerEvents()
         self._client_id = config.client_id
         self._ib_manager: IbManager = IbManager(
             self._config.ib_ip, self._config.ib_port,
-            self._client_id, self._contract_manager,
+            self._client_id, self._contract_manager, self._events,
             self._config.data_subscriber)
 
     async def initialize(self) -> None:
@@ -75,7 +77,8 @@ class IbServer(BaseServer):
         await self._contract_manager.initialize()
         await self._ib_manager.initialize()
         self._market_data_handler = MarketDataHandler(
-            self._ib_manager._ib, self._config.data_subscriber, self._redis)
+            self._ib_manager._ib, self._config.data_subscriber,
+            self._redis, self._events)
         await self._market_data_handler.initialize()
         self._console_handler = ConsoleHandler(
             self, self._redis, self._log)

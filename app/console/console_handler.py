@@ -1,7 +1,7 @@
 import asyncio
 from functools import partial
 import json
-from typing import Any, Callable, Dict, List
+from typing import Callable, Dict, List
 
 from app.redis.redis_client import RedisHandler
 from app.server.base_server import BaseServer
@@ -10,6 +10,7 @@ from app.server.protocols import (
     ResponseStatus,
     ConsoleCommandRequest,
     ConsoleCommandResponse,
+    PublishedMarketData,
 )
 from app.trader.mock_trade_manager import MockTradeManager
 from app.trader.normal_trade_manager import NormalTradeManager
@@ -69,6 +70,8 @@ class ConsoleHandler(object):
         self._trader: RandomTrader = RandomTrader(
             self._ib_manager._ib, self._ib_manager)
         self._server.add_dispatcher(ConsoleCommandRequest, self.on_console_cmd)
+        self._print_market_symbol: str = ''
+        self._ib_manager._events.market_data += self._print_market_data
         self.add_handler('find_symbols', self._ib_manager.find_symbols)
         self.add_handler('subscribe_market', self._ib_manager.sub_market)
         self.add_handler('unsubscribe_market', self._ib_manager.unsub_market)
@@ -93,6 +96,15 @@ class ConsoleHandler(object):
         self.add_handler('run_mock_strategy', self._mock_manager.test_strategy)
         self.add_handler('tod', self._trade_manager.place_order)
         self.add_handler('tcod', self._trade_manager.cancel_order)
+        self.add_handler('print_market', self._print_market)
+
+    def _print_market_data(self, data: PublishedMarketData) -> None:
+        print(f'alias: {data.alias}, print: {self._print_market_symbol}')
+        if data.alias == self._print_market_symbol:
+            print(data)
+
+    def _print_market(self, symbol: str) -> str:
+        self._print_market_symbol = symbol.upper()
 
     def list_strategies(self) -> List[str]:
         return [s for s in Strategies.keys()]

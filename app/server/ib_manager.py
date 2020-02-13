@@ -5,6 +5,7 @@ from app.contract_manager import ContractManager
 from app.recorder.account_recorder import AccountRecorder
 from app.recorder.market_recorder import MarketRecorder
 from app.recorder.recorder import Recorder
+from app.server.server_events import ServerEvents
 from app.utils.log import Log
 from ib_insync import Contract, IB, LimitOrder, Order, Trade
 
@@ -14,12 +15,14 @@ class IbManager(object):
 
     def __init__(self, ip: str, port: int,
                  client_id: int, contract_manager: ContractManager,
+                 events: ServerEvents,
                  data_subscriber: bool):
         self._ib = IB()
         self._ib_ip: str = ip
         self._ib_port: int = port
         self._client_id: int = client_id
         self._contract_manager: ContractManager = contract_manager
+        self._events: ServerEvents = events
         self._subscribed_mkt_contracts: List[str] = []
         self._subscribed_mkt_depth_contracts: List[str] = []
         self._log: Log = Log.create(Log.path(self.log_file))

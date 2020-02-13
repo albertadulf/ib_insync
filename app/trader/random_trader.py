@@ -1,11 +1,11 @@
 import asyncio
 from dataclasses import dataclass
 from random import randint
-from typing import Set
 
 from app.server.ib_manager import IbManager
+from app.server.protocols import PublishedMarketData
 from app.utils.common_util import tick_ms
-from ib_insync import Contract, IB, Ticker
+from ib_insync import Contract, IB
 
 
 @dataclass
@@ -44,7 +44,7 @@ class RandomTrader(object):
         self._is_stopped: bool = True
         self._start: int = 0
         self._order_item: OrderItem = None
-        self._ib.pendingTickersEvent += self.on_data_update
+        self._ib_manager._events.market_data += self.on_data_update
         self._ib.commissionReportEvent += self.on_commission_report
 
     def start(self, contract: Contract) -> None:
@@ -102,18 +102,16 @@ class RandomTrader(object):
         self._order_item = OrderItem(
             tick_ms(), trade.order.orderId, 'sell', trade.order.lmtPrice)
 
-    def on_data_update(self, tickers: Set[Ticker]) -> None:
+    def on_data_update(self, data: PublishedMarketData) -> None:
         if self._task is None:
             return
-        for ticker in tickers:
-            if ticker.contract == self._contract:
-                if len(ticker.domBids) > 0 and len(ticker.domAsks) > 0:
-                    self._queue.put_nowait(
-                        TradeItem(ticker.domBids[0].price,
-                                  ticker.domBids[0].size,
-                                  ticker.domAsks[0].price,
-                                  ticker.domAsks[0].size,
-                                  ticker.time.timestamp() * 1000))
+        if data.alias == self._contract.symbol:
+            self._queue.put_nowait(
+                TradeItem(data.bid_prices[0],
+                          data.bid_sizes[0],
+                          data.ask_prices[0],
+                          data.ask_sizes[0],
+                          data.ts * 1000))
 
     def on_commission_report(self, trade, fill, report) -> None:
         if self._task is None:
