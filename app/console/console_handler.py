@@ -99,7 +99,6 @@ class ConsoleHandler(object):
         self.add_handler('print_market', self._print_market)
 
     def _print_market_data(self, data: PublishedMarketData) -> None:
-        print(f'alias: {data.alias}, print: {self._print_market_symbol}')
         if data.alias == self._print_market_symbol:
             print(data)
 
