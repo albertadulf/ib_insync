@@ -4,5 +4,7 @@
     "ib_ip": "127.0.0.1",
     "ib_port": 4002,
     "client_id": 6,
-    "master_qq": 413707375
+    "master_qq": 413707375,
+    "data_subscriber": true,
+    "group": 0
 }

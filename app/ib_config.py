@@ -12,6 +12,7 @@ class IbConfig(object):
     client_id: int = 3
     master_qq: int = 413707375
     data_subscriber: bool = False
+    group: int = 0
 
 
 async def loadConfig(config_file) -> IbConfig:

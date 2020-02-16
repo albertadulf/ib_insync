@@ -1,8 +1,9 @@
 import asyncio
+from functools import partial
 from typing import Any, Callable
 
 from app.dispatcher import Dispatcher
-from app.ib_config import IbConfig
+from app.ib_config import IbConfig, loadConfig
 from app.redis.redis_client import RedisHandler
 from app.server.protocols import (
     kCmdChannel,
@@ -25,9 +26,8 @@ class ClientBase(object):
         self._logger = logger
         self._worker_type: int = worker_type
         self._config: IbConfig = config
-        self._cmd_out_channel: str = f'{kCmdChannel}:{config.client_id}'
-        self._allocator_channel: str = f'{kCmdAllocatorChannel}:' \
-                                       + f'{config.client_id}'
+        self._cmd_out_channel: str = f'{kCmdChannel}:{config.group}'
+        self._allocator_channel: str = f'{kCmdAllocatorChannel}:{config.group}'
         self._dispatcher: Dispatcher = Dispatcher()
         self._last_active_ts: int = 0
         self._rtt: int = -1
@@ -47,8 +47,9 @@ class ClientBase(object):
             message = await self._queue.get()
             await self._dispatcher.on_message(message)
 
-    async def _on_message(self, message: bytes) -> None:
-        self._last_active_ts = tick_ms()
+    async def _on_message(self, channel: str, message: bytes) -> None:
+        if channel == self._cmd_channel:
+            self._last_active_ts = tick_ms()
         messages = self._transporter.deserialize(message)
         for data in messages:
             self._queue.put_nowait(data)
@@ -84,11 +85,12 @@ class ClientBase(object):
                           response.sid, response.channel, response.status)
         if response.status == ResponseStatus.kSuccess \
            or response.status == ResponseStatus.kAlready:
+            self._last_active_ts = tick_ms()
             self._cmd_channel = response.channel
             self._join_task.cancel()
             self._join_task = None
-            await self._redis.unsubscribe(self._allocator_channel)
-            await self._redis.subscribe(response.channel, self._on_message)
+            await self._redis.subscribe(
+                response.channel, partial(self._on_message, response.channel))
             self._keep_alive_task = asyncio.create_task(self._keep_alive())
             await self.on_client_ready()
 
@@ -101,12 +103,10 @@ class ClientBase(object):
 
     async def on_client_ready(self) -> None:
         # need to implement by derived client
-        print('on client ready')
         pass
 
     async def join_channel(self) -> None:
         self._join_task = asyncio.create_task(self._on_join_timeout())
-        await self._redis.subscribe(self._allocator_channel, self._on_message)
         request = WorkerJoinRequest()
         request.sid = self.sid()
         request.wtype = self._worker_type
@@ -118,6 +118,9 @@ class ClientBase(object):
         self._redis = await RedisHandler.create(
             ip=self._config.cmd_redis_ip, port=self._config.cmd_redis_port)
         self._sid = unique_id()
+        await self._redis.subscribe(
+            self._allocator_channel,
+            partial(self._on_message, self._allocator_channel))
         await self.join_channel()
 
     def sid(self) -> str:
@@ -130,7 +133,9 @@ class ClientBase(object):
 
 async def test():
     logger = Log.create(Log.path('test')).get_logger('test')
-    client = ClientBase(logger, 1)
+    config_file = 'app/config.json'
+    config = await loadConfig(config_file)
+    client = ClientBase(logger, 0, config)
     await client.initialize()
 
 if __name__ == '__main__':

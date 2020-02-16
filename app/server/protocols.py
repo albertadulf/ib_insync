@@ -15,8 +15,14 @@ kConsoleCommandResponseUri = 6
 # Data channel protocols
 kPublishedMarketDataUri = 7
 
+kClientStatusUri = 8
+kRequireGroupInfoUri = 9
+
 # WorkerTypes
 kWorkerTypeConsole = 0
+kWorkerTypeSubscriber = 1
+kWorkerTypeIbSimulator = 2
+kWorkerTypeIbTrader = 3
 
 # Redis channels
 kCmdChannel = 'ib:cmd'
@@ -27,6 +33,12 @@ kDataChannel = 'ib:data'
 def worker_type_str(worker_type: int) -> str:
     if worker_type == kWorkerTypeConsole:
         return 'console worker'
+    elif worker_type == kWorkerTypeSubscriber:
+        return 'market subscriber'
+    elif worker_type == kWorkerTypeIbSimulator:
+        return 'simulator service'
+    elif worker_type == kWorkerTypeIbTrader:
+        return 'trader service'
     return 'unknown worker'
 
 
@@ -50,10 +62,10 @@ class ProtocolBase(Object):
             if k in obj:
                 v = obj[k]
             else:
-                v = None
+                v = default
             typ = type(default)
             if typ is str:
-                setattr(self, k, v)
+                setattr(self, k, str(v) if v else default)
             elif typ is int:
                 setattr(self, k, int(v) if v else default)
             elif typ is float:
@@ -126,6 +138,7 @@ class ConsoleCommandRequest(ProtocolBase):
     defaults = dict(
         uri=kConsoleCommandRequestUri,
         sid='',
+        peer_sid='',
         cmd='')
     __slots__ = defaults.keys()
 
@@ -134,6 +147,8 @@ class ConsoleCommandResponse(ProtocolBase):
     defaults = dict(
         uri=kConsoleCommandResponseUri,
         status=0,
+        sid='',
+        peer_sid='',
         msg='')
     __slots__ = defaults.keys()
 
@@ -147,6 +162,22 @@ class PublishedMarketData(ProtocolBase):
         bid_sizes=[],
         ask_prices=[],
         ask_sizes=[])
+    __slots__ = defaults.keys()
+
+
+class NotifyClientStatusChanged(ProtocolBase):
+    defaults = dict(
+        uri=kClientStatusUri,
+        sid='',
+        wtype=0,
+        online=False)
+    __slots__ = defaults.keys()
+
+
+class RequireGroupInfo(ProtocolBase):
+    defaults = dict(
+        uri=kRequireGroupInfoUri,
+        sid='')
     __slots__ = defaults.keys()
 
 
